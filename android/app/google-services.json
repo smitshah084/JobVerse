@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "296971774377",
+    "project_id": "job-verse-db",
+    "storage_bucket": "job-verse-db.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:296971774377:android:e71b02265a2ad2edc57cb8",
+        "android_client_info": {
+          "package_name": "com.example.job_verse"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDZvG1_xWxy2146PVIoFQXYhiQ8O-hKAjY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
