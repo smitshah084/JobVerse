@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:job_verse/services/auth.dart';
+import 'SignupPage.dart';// Import the SignupPage
 
 class Login extends StatelessWidget {
   final TextEditingController emailController = TextEditingController();
@@ -29,16 +30,20 @@ class Login extends StatelessWidget {
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                AuthService().signIn(emailController.text, passwordController.text,context);
+                AuthService().signIn(emailController.text, passwordController.text, context);
               },
               child: Text('Login'),
             ),
             SizedBox(height: 20),
-            ElevatedButton(
+            TextButton(
               onPressed: () {
-                AuthService().signUp(emailController.text, passwordController.text,context);
+                // Navigate to the SignupPage when the button is pressed
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => SignupPage()),
+                );
               },
-              child: Text('Sign Up'),
+              child: Text('Don\'t have an account? Sign Up'),
             ),
           ],
         ),

@@ -1,8 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:job_verse/pages/home.dart';
-import 'package:job_verse/pages/login.dart';
+import 'package:job_verse/pages/CompanyHome.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:job_verse/pages/landing.dart';
+import 'package:job_verse/pages/login.dart';
 
 class AuthService {
   // Determine if the user is authenticated.
@@ -20,13 +21,41 @@ class AuthService {
   }
 
   // Sign out
-  signOut() {
+  signOut(BuildContext context) {
     FirebaseAuth.instance.signOut();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => Login()),
+    );
   }
 
   Future<void> signIn(String email, String password, BuildContext context) async {
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      // Fetch user data from Firestore
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).get();
+
+      if (userDoc.exists) {
+        bool isCompany = userDoc.get('isCompany') ?? false;
+
+        if (isCompany) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => Home()), // Navigate to Home() for company users
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => VacancyManager()), // Navigate to VacancyManager() for others
+          );
+        }
+      } else {
+        _showErrorDialog(context, 'User data not found.');
+      }
     } on FirebaseAuthException catch (e) {
       String message;
       if (e.code == 'invalid-email') {
@@ -43,9 +72,30 @@ class AuthService {
   }
 
   // Sign up
-  Future<void> signUp(String email, String password, BuildContext context) async {
+  Future<void> signUp(String email, String password, String name,bool _isCompany, BuildContext context) async {
     try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email, password: password);
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      // Store user data in Firestore
+      if (userCredential.user != null) {
+        // Store user data in Firestore
+        await FirebaseFirestore.instance.collection('users').doc(
+            userCredential.user!.uid).set({
+          'email': email,
+          'isCompany':_isCompany,
+          'name': name,
+          'createdAt': FieldValue.serverTimestamp(), // Use server timestamp
+        });
+
+        // Navigate to the home page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) =>
+              Home()), // Navigate to Home or another appropriate page
+        );
+      }
     } on FirebaseAuthException catch (e) {
       String message;
       if (e.code == 'weak-password') {
@@ -57,9 +107,10 @@ class AuthService {
       }
       _showErrorDialog(context, message);
     } catch (e) {
-      _showErrorDialog(context, 'Please try again.');
+      _showErrorDialog(context, 'An error occurred. Please try again.');
     }
   }
+
 
   // Helper function to show error dialogs
   void _showErrorDialog(BuildContext context, String message) {
