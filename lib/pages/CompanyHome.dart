@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:job_verse/services/auth.dart';
+import 'package:job_verse/pages/Profile.dart'; // Import the profile page
 
 class Home extends StatelessWidget {
   // Sample static data
@@ -25,20 +26,71 @@ class Home extends StatelessWidget {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Home'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: () {
+  // Build the Drawer for sidebar navigation
+  Widget buildDrawer(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: <Widget>[
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Colors.blue,
+            ),
+            child: Text(
+              'Menu',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+              ),
+            ),
+          ),
+          ListTile(
+            leading: Icon(Icons.home),
+            title: Text('Home'),
+            onTap: () {
+              // Close the drawer and stay on the Home page
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.person),
+            title: Text('Profile'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => CreateProfile()),
+              );
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.info),
+            title: Text('Status'),
+            onTap: () {
+              // Add status page navigation logic here
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Status Page Coming Soon!')),
+              );
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.logout),
+            title: Text('Sign Out'),
+            onTap: () {
               AuthService().signOut(context);
             },
           ),
         ],
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Home'),
+      ),
+      drawer: buildDrawer(context), // Add the drawer here
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: ListView.builder(

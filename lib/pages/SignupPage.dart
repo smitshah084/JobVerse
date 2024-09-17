@@ -9,7 +9,7 @@ class SignupPage extends StatefulWidget {
 
 class _SignupPageState extends State<SignupPage> {
   final _formKey = GlobalKey<FormState>();
-  final _authService = AuthService();
+  final AuthService _authService = AuthService();
 
   String _email = '';
   String _password = '';
@@ -18,13 +18,13 @@ class _SignupPageState extends State<SignupPage> {
   bool _isLoading = false;
 
   // Function to sign up a user
-  void _submitSignupForm() async {
-    if (_formKey.currentState!.validate()) {
+  Future<void> _submitSignupForm() async {
+    if (_formKey.currentState?.validate() ?? false) {
       setState(() {
         _isLoading = true;
       });
       try {
-        await _authService.signUp(_email, _password, _name,_isCompany , context,);
+        await _authService.signUp(_email, _password, _name, _isCompany, context);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => Login()),
@@ -33,8 +33,29 @@ class _SignupPageState extends State<SignupPage> {
         setState(() {
           _isLoading = false;
         });
+        // Handle error display here if needed
+        _showErrorDialog(error.toString());
       }
     }
+  }
+
+  // Helper function to show error dialogs
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Error'),
+        content: Text(message),
+        actions: <Widget>[
+          TextButton(
+            child: Text('Okay'),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+            },
+          )
+        ],
+      ),
+    );
   }
 
   @override
@@ -49,45 +70,25 @@ class _SignupPageState extends State<SignupPage> {
           key: _formKey,
           child: Column(
             children: [
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Name'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your name';
-                  }
-                  return null;
-                },
-                onChanged: (value) {
-                  _name = value;
-                },
+              _buildTextField(
+                labelText: 'Name',
+                onChanged: (value) => _name = value,
+                validator: (value) => value == null || value.isEmpty ? 'Please enter your name' : null,
               ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Email'),
+              _buildTextField(
+                labelText: 'Email',
                 keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter an email';
-                  }
-                  return null;
-                },
-                onChanged: (value) {
-                  _email = value;
-                },
+                onChanged: (value) => _email = value,
+                validator: (value) => value == null || value.isEmpty ? 'Please enter an email' : null,
               ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Password'),
+              _buildTextField(
+                labelText: 'Password',
                 obscureText: true,
+                onChanged: (value) => _password = value,
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a password';
-                  }
-                  if (value.length < 6) {
-                    return 'Password should be at least 6 characters long';
-                  }
+                  if (value == null || value.isEmpty) return 'Please enter a password';
+                  if (value.length < 6) return 'Password should be at least 6 characters long';
                   return null;
-                },
-                onChanged: (value) {
-                  _password = value;
                 },
               ),
               Row(
@@ -120,6 +121,23 @@ class _SignupPageState extends State<SignupPage> {
           ),
         ),
       ),
+    );
+  }
+
+  // Helper function to build text fields
+  Widget _buildTextField({
+    required String labelText,
+    required ValueChanged<String> onChanged,
+    required String? Function(String?) validator,
+    bool obscureText = false,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return TextFormField(
+      decoration: InputDecoration(labelText: labelText),
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      onChanged: onChanged,
+      validator: validator,
     );
   }
 }

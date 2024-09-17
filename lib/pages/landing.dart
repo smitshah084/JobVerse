@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:job_verse/pages/Vacancy.dart';
 import 'package:job_verse/pages/VacancyCard.dart';
 import 'package:job_verse/services/auth.dart';
-
+import 'package:job_verse/pages/Profile.dart'; // Import the Profile page
 
 class VacancyManager extends StatefulWidget {
   const VacancyManager({super.key});
@@ -31,20 +31,87 @@ class _VacancyManagerState extends State<VacancyManager> {
     });
   }
 
+  Widget buildDrawer(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: <Widget>[
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Colors.blue,
+            ),
+            child: Text(
+              'Menu',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+              ),
+            ),
+          ),
+          ListTile(
+            leading: Icon(Icons.home),
+            title: Text('Home'),
+            onTap: () {
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.person),
+            title: Text('Profile'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => CreateProfile()),
+              );
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.info),
+            title: Text('Status'),
+            onTap: () {
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Status Page Coming Soon!')),
+              );
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.logout),
+            title: Text('Sign Out'),
+            onTap: () {
+              AuthService().signOut(context);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Vacancy Manager'),
+        title: Text('JobVerse'),
         actions: [
+          IconButton(
+            icon: Icon(Icons.person),
+            onPressed: () {
+              // Navigate to Profile page
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => CreateProfile()), // Ensure this is the correct profile page widget
+              );
+            },
+          ),
           IconButton(
             icon: Icon(Icons.logout),
             onPressed: () {
-              AuthService().signOut();
+              AuthService().signOut(context);
             },
-          )
+          ),
         ],
       ),
+      drawer: buildDrawer(context),
       body: ListView.builder(
         itemCount: vacancies.length,
         itemBuilder: (context, index) {

@@ -1,10 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:job_verse/services/auth.dart';
-import 'SignupPage.dart';// Import the SignupPage
+import 'SignupPage.dart'; // Import the SignupPage
 
-class Login extends StatelessWidget {
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+class Login extends StatefulWidget {
+  @override
+  _LoginState createState() => _LoginState();
+}
+
+class _LoginState extends State<Login> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
+
+  // Function to handle login
+  Future<void> _handleLogin() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _authService.signIn(
+        _emailController.text,
+        _passwordController.text,
+        context,
+      );
+    } catch (error) {
+      _showErrorDialog(error.toString());
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Helper function to show error dialogs
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Error'),
+        content: Text(message),
+        actions: <Widget>[
+          TextButton(
+            child: Text('Okay'),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+            },
+          )
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,21 +64,22 @@ class Login extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            TextField(
-              controller: emailController,
-              decoration: InputDecoration(hintText: 'Email'),
+            _buildTextField(
+              controller: _emailController,
+              hintText: 'Email',
+              keyboardType: TextInputType.emailAddress,
             ),
             SizedBox(height: 10),
-            TextField(
-              controller: passwordController,
-              decoration: InputDecoration(hintText: 'Password'),
+            _buildTextField(
+              controller: _passwordController,
+              hintText: 'Password',
               obscureText: true,
             ),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                AuthService().signIn(emailController.text, passwordController.text, context);
-              },
+            _isLoading
+                ? CircularProgressIndicator()
+                : ElevatedButton(
+              onPressed: _handleLogin,
               child: Text('Login'),
             ),
             SizedBox(height: 20),
@@ -48,6 +96,24 @@ class Login extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  // Helper function to build text fields
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hintText,
+    bool obscureText = false,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        hintText: hintText,
+        border: OutlineInputBorder(),
+      ),
+      obscureText: obscureText,
+      keyboardType: keyboardType,
     );
   }
 }
