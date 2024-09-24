@@ -3,19 +3,21 @@ import 'Vacancy.dart';
 
 class VacancyCard extends StatelessWidget {
   final Vacancy vacancy;
-  final VoidCallback onIncreaseIntake;
-  final VoidCallback onDecreaseIntake;
+  final VoidCallback onView;
 
   VacancyCard({
     required this.vacancy,
-    required this.onIncreaseIntake,
-    required this.onDecreaseIntake,
+    required this.onView,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: EdgeInsets.all(8.0),
+      elevation: 5, // Adds shadow
+      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 16), // Spacing around the card
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15), // Rounded corners
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -23,34 +25,53 @@ class VacancyCard extends StatelessWidget {
           children: [
             Text(
               vacancy.position,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.blueAccent,
+              ),
             ),
-            SizedBox(height: 4),
-            Text(
-              'Company: ${vacancy.company}',
-              style: TextStyle(fontSize: 16),
-            ),
-            SizedBox(height: 4),
+            SizedBox(height: 10),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                Icon(Icons.business, color: Colors.grey[700]),
+                SizedBox(width: 8),
                 Text(
-                  'Intake: ${vacancy.intake}',
-                  style: TextStyle(fontSize: 16),
-                ),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.remove),
-                      onPressed: onDecreaseIntake,
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.add),
-                      onPressed: onIncreaseIntake,
-                    ),
-                  ],
+                  vacancy.company,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey[800],
+                  ),
                 ),
               ],
+            ),
+            SizedBox(height: 10),
+            Row(
+              children: [
+                Icon(Icons.group, color: Colors.grey[700]),
+                SizedBox(width: 8),
+                Text(
+                  'Intakes: ${vacancy.intake}',
+                  style: TextStyle(fontSize: 16, color: Colors.grey[800]),
+                ),
+              ],
+            ),
+            SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  backgroundColor: Colors.blueAccent,
+                ),
+                onPressed: onView,
+                icon: Icon(Icons.visibility, size: 18),
+                label: Text('View Details', style: TextStyle(fontSize: 16)),
+              ),
             ),
           ],
         ),

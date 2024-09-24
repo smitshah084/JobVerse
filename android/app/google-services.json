@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "296971774377",
-    "project_id": "job-verse-db",
-    "storage_bucket": "job-verse-db.appspot.com"
+    "project_number": "889127542360",
+    "project_id": "jobverse-3a6b6",
+    "storage_bucket": "jobverse-3a6b6.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:296971774377:android:e71b02265a2ad2edc57cb8",
+        "mobilesdk_app_id": "1:889127542360:android:d16a3614b1660c201a742d",
         "android_client_info": {
           "package_name": "com.example.job_verse"
         }
@@ -15,7 +15,26 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDZvG1_xWxy2146PVIoFQXYhiQ8O-hKAjY"
+          "current_key": "AIzaSyCn9kkLvEaQPEa18JhG8y0rLAeJhKMCb5Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:889127542360:android:70192148ce7629461a742d",
+        "android_client_info": {
+          "package_name": "com.example.jobverse"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCn9kkLvEaQPEa18JhG8y0rLAeJhKMCb5Y"
         }
       ],
       "services": {

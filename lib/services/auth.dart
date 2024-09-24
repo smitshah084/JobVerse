@@ -23,6 +23,10 @@ class AuthService {
     );
   }
 
+  User? get currentUser {
+    return FirebaseAuth.instance.currentUser;
+  }
+
   Widget _navigateToHomePage(User user, BuildContext context) {
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance.collection('profiles').doc(user.uid).get(),

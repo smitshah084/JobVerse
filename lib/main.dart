@@ -1,47 +1,3 @@
-// import 'package:firebase_core/firebase_core.dart';
-// import 'package:flutter/material.dart';
-// import 'package:job_verse/services/auth.dart';
-//
-//
-// Future<void> main() async {
-//   WidgetsFlutterBinding.ensureInitialized();
-//
-//   const firebaseConfig = FirebaseOptions(
-//       apiKey: "AIzaSyCn9kkLvEaQPEa18JhG8y0rLAeJhKMCb5Y",
-//       authDomain: "jobverse-3a6b6.firebaseapp.com",
-//       projectId: "jobverse-3a6b6",
-//       storageBucket: "jobverse-3a6b6.appspot.com",
-//       messagingSenderId: "889127542360",
-//       appId: "1:889127542360:android:70192148ce7629461a742d"
-//   );
-//
-//   try {
-//     await Firebase.initializeApp(
-//       options: firebaseConfig,
-//     );
-//     print("Firebase initialized successfully");
-//   } catch (e) {
-//     print("Error initializing Firebase: $e");
-//   }
-//
-//   runApp(const MyApp());
-// }
-//
-// class MyApp extends StatelessWidget {
-//   const MyApp({super.key});
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       title: 'Flutter Auth Demo',
-//       theme: ThemeData(
-//         primarySwatch: Colors.blue,
-//       ),
-//       home: AuthService().handleAuthState(),
-//       debugShowCheckedModeBanner: false,
-//     );
-//   }
-// }
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:job_verse/pages/login.dart';
@@ -54,6 +10,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
   runApp(MyApp());
 }
 
@@ -61,6 +18,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'JobVerse',
       theme: ThemeData(
         primarySwatch: Colors.teal,

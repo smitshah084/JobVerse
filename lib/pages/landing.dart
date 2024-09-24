@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:job_verse/pages/Vacancy.dart';
 import 'package:job_verse/pages/VacancyCard.dart';
+import 'package:job_verse/pages/VacancyDetailsPage.dart';
 import 'package:job_verse/services/auth.dart';
-import 'package:job_verse/pages/Profile.dart'; // Import the Profile page
+import 'package:job_verse/pages/Profile.dart';
 
 class VacancyManager extends StatefulWidget {
   const VacancyManager({super.key});
@@ -12,23 +14,44 @@ class VacancyManager extends StatefulWidget {
 }
 
 class _VacancyManagerState extends State<VacancyManager> {
-  List<Vacancy> vacancies = [
-    Vacancy(position: 'Software Engineer', company: 'TechCorp', intake: 5),
-    Vacancy(position: 'Product Manager', company: 'InnovateX', intake: 3),
-  ];
+  List<Vacancy> vacancies = [];// To store companyId and name pairs
 
-  // Method to add a new vacancy
-  void _addVacancy(Vacancy vacancy) {
+  @override
+  void initState() {
+    super.initState();
+    _fetchVacancies();
+  }
+
+  Future<void> _fetchVacancies() async {
+    QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('vacancies').get();
+
     setState(() {
-      vacancies.add(vacancy);
+      vacancies = snapshot.docs.map((doc) {
+        var data = doc.data() as Map<String, dynamic>;
+
+        return Vacancy(
+          position: data['role'] ?? 'Unknown Role', // Handle potential null
+          company: data['companyName'] ?? 'Unknown Company', // Handle potential null
+          intake: data['numberOfIntakes'] ?? 0, // Default to 0
+          description: data['description'] ?? 'No description available', // Handle potential null
+          jobType: data['jobType'] ?? 'Unknown Job Type', // Handle potential null
+          vacancyId: doc.id,
+        );
+      }).toList();
     });
   }
 
-  // Method to update the intake of a vacancy
-  void _updateIntake(int index, int intakeChange) {
-    setState(() {
-      vacancies[index].intake += intakeChange;
-    });
+
+
+  void _navigateToDetailsPage(Vacancy vacancy) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VacancyDetailsPage(
+          vacancy: vacancy,
+        ),
+      ),
+    );
   }
 
   Widget buildDrawer(BuildContext context) {
@@ -37,15 +60,10 @@ class _VacancyManagerState extends State<VacancyManager> {
         padding: EdgeInsets.zero,
         children: <Widget>[
           DrawerHeader(
-            decoration: BoxDecoration(
-              color: Colors.blue,
-            ),
+            decoration: BoxDecoration(color: Colors.blue),
             child: Text(
               'Menu',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-              ),
+              style: TextStyle(color: Colors.white, fontSize: 24),
             ),
           ),
           ListTile(
@@ -59,20 +77,14 @@ class _VacancyManagerState extends State<VacancyManager> {
             leading: Icon(Icons.person),
             title: Text('Profile'),
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => CreateProfile()),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (context) => CreateProfile()));
             },
           ),
           ListTile(
             leading: Icon(Icons.info),
             title: Text('Status'),
             onTap: () {
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Status Page Coming Soon!')),
-              );
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Status Page Coming Soon!')));
             },
           ),
           ListTile(
@@ -92,24 +104,6 @@ class _VacancyManagerState extends State<VacancyManager> {
     return Scaffold(
       appBar: AppBar(
         title: Text('JobVerse'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.person),
-            onPressed: () {
-              // Navigate to Profile page
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => CreateProfile()), // Ensure this is the correct profile page widget
-              );
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: () {
-              AuthService().signOut(context);
-            },
-          ),
-        ],
       ),
       drawer: buildDrawer(context),
       body: ListView.builder(
@@ -117,71 +111,10 @@ class _VacancyManagerState extends State<VacancyManager> {
         itemBuilder: (context, index) {
           return VacancyCard(
             vacancy: vacancies[index],
-            onIncreaseIntake: () => _updateIntake(index, 1),
-            onDecreaseIntake: () => _updateIntake(index, -1),
+            onView: () => _navigateToDetailsPage(vacancies[index]),
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Open a dialog to add a new vacancy
-          _showAddVacancyDialog();
-        },
-        child: Icon(Icons.add),
-      ),
-    );
-  }
-
-  // Dialog to add a new vacancy
-  void _showAddVacancyDialog() {
-    final TextEditingController positionController = TextEditingController();
-    final TextEditingController companyController = TextEditingController();
-    final TextEditingController intakeController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Add New Vacancy'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: positionController,
-                decoration: InputDecoration(labelText: 'Position'),
-              ),
-              TextField(
-                controller: companyController,
-                decoration: InputDecoration(labelText: 'Company'),
-              ),
-              TextField(
-                controller: intakeController,
-                decoration: InputDecoration(labelText: 'Intake'),
-                keyboardType: TextInputType.number,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                final String position = positionController.text;
-                final String company = companyController.text;
-                final int intake = int.parse(intakeController.text);
-
-                _addVacancy(Vacancy(position: position, company: company, intake: intake));
-                Navigator.of(context).pop();
-              },
-              child: Text('Add'),
-            ),
-          ],
-        );
-      },
     );
   }
 }

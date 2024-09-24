@@ -44,7 +44,7 @@ class _CreateProfileState extends State<CreateProfile> {
           _professionController.text = data['profession'] ?? '';
           _dobController.text = data['dob'] ?? '';
           _aboutController.text = data['about'] ?? '';
-          _imageUrl = data['image']; // Store image URL here
+          _imageUrl = data['image'];
           setState(() {});
         }
       }
@@ -57,7 +57,7 @@ class _CreateProfileState extends State<CreateProfile> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Create Profile'),
+        title: Text('Profile'),
       ),
       body: Form(
         key: _formKey,
