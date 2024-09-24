@@ -233,9 +233,9 @@ class _CreateProfileState extends State<CreateProfile> {
       setState(() {
         _isLoading = false;
       });
-
-      Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => Home()));
+      Navigator.pop(context);
+      // Navigator.of(context).pushReplacement(
+      //     MaterialPageRoute(builder: (context) => Home()));
     } catch (e) {
       setState(() {
         _isLoading = false;

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:job_verse/pages/ViewProfilePage.dart';
+
+import 'ViewProfilePage.dart';
 
 class ApplicantsPage extends StatelessWidget {
   final String vacancyId;
@@ -29,6 +32,7 @@ class ApplicantsPage extends StatelessWidget {
         applicants.add({
           'applicantName': userProfileData['name'] ?? 'Unknown',
           'applicantEmail': userProfileData['email'] ?? 'No email provided',
+          'uid':userId,
         });
       }
     }
@@ -89,11 +93,26 @@ class ApplicantsPage extends StatelessWidget {
                         ),
                       ),
                       ElevatedButton(
-                        onPressed: () => (),
-                        child: Text('View Profile'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue, // Change the color as needed
-                        ),
+                        onPressed: () {
+                          // Ensure that applicant['uid'] is indeed a String
+                          String? uid = applicant['uid'] as String?;
+                          if (uid == null) {
+                            print('Error: uid is null');
+                            return; // Handle the case when uid is null
+                          }
+
+                          // Proceed with navigation
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ProfilePage(uid: uid), // Pass the user ID to fetch complete profile
+                            ),
+                          );
+                        },
+                          child: Text('View Profile'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue, // Change the color as needed
+                          ),
                       ),
                     ],
                   ),
