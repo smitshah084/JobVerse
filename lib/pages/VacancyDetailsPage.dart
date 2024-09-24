@@ -41,7 +41,7 @@ class _VacancyDetailsPageState extends State<VacancyDetailsPage> {
       if (applicationSnapshot.docs.isNotEmpty) {
         setState(() {
           _hasApplied = true;
-          _currentState = applicationSnapshot.docs.first['CurrentState'] ?? 'Applied'; // Retrieve the current state
+          _currentState = applicationSnapshot.docs.first['CurrentState']; // Retrieve the current state
         });
       }
     } catch (e) {

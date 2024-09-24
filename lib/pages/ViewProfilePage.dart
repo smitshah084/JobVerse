@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 
 class ProfilePage extends StatefulWidget {
   final String uid;
+  final String vid;
 
-  ProfilePage({required this.uid});
+  ProfilePage({required this.uid,required this.vid});
 
   @override
   _ProfilePageState createState() => _ProfilePageState();
@@ -16,11 +17,21 @@ class _ProfilePageState extends State<ProfilePage> {
   String _dob = 'No date of birth provided';
   String _about = 'No details provided';
   String? _imageUrl;
+  String _currentApplicationState = 'Applied'; // Default state
+  String _resumeUrl = 'No details provided';
+
+  final List<String> _applicationStates = [
+    'Applied',
+    'Interview Scheduled',
+    'Offer Received',
+    'Rejected',
+  ]; // Possible states
 
   @override
   void initState() {
     super.initState();
     _loadProfileData();
+    _loadApplicationState(); // Load application state
   }
 
   Future<void> _loadProfileData() async {
@@ -37,11 +48,62 @@ class _ProfilePageState extends State<ProfilePage> {
           _profession = data['profession']?.toString() ?? 'No profession provided';
           _dob = data['dob']?.toString() ?? 'No date of birth provided';
           _about = data['about']?.toString() ?? 'No details provided';
-          _imageUrl = data['image']?.toString();
+          _imageUrl = data['image']?.toString()?? 'No details provided';
+          _resumeUrl = data['resume'] ?? 'No Resume provided';
         });
       }
     } catch (e) {
       print("Failed to load profile data: $e");
+    }
+  }
+
+  Future<void> _loadApplicationState() async {
+    try {
+      DocumentSnapshot applicationSnapshot = await FirebaseFirestore.instance
+          .collection('applications')
+          .where('userId', isEqualTo: widget.uid)
+          .where('vacancyId',isEqualTo: widget.vid)
+          .limit(1)
+          .get()
+          .then((snapshot) => snapshot.docs.first);
+
+      if (applicationSnapshot.exists) {
+        Map<String, dynamic> data = applicationSnapshot.data() as Map<String, dynamic>;
+        setState(() {
+          _currentApplicationState = data['CurrentState']?.toString() ?? 'Applied';
+        });
+      }
+    } catch (e) {
+      print("Failed to load application state: $e");
+    }
+  }
+
+  Future<void> _updateApplicationState(String newState) async {
+    try {
+      QuerySnapshot applicationsSnapshot = await FirebaseFirestore.instance
+          .collection('applications')
+          .where('userId', isEqualTo: widget.uid)
+          .where('vacancyId',isEqualTo: widget.vid)
+          .limit(1)
+          .get();
+
+      if (applicationsSnapshot.docs.isNotEmpty) {
+        DocumentSnapshot applicationDoc = applicationsSnapshot.docs.first;
+        await FirebaseFirestore.instance
+            .collection('applications')
+            .doc(applicationDoc.id)
+            .update({
+          'CurrentState': newState,
+        });
+        setState(() {
+          _currentApplicationState = newState;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Application state updated to $newState')),
+        );
+      }
+    } catch (e) {
+      print("Failed to update application state: $e");
     }
   }
 
@@ -100,6 +162,26 @@ class _ProfilePageState extends State<ProfilePage> {
                         _about,
                         style: TextStyle(fontSize: 16),
                         textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'Application State:',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                      ),
+                      SizedBox(height: 4),
+                      DropdownButton<String>(
+                        value: _currentApplicationState,
+                        onChanged: (String? newState) {
+                          if (newState != null) {
+                            _updateApplicationState(newState);
+                          }
+                        },
+                        items: _applicationStates.map((String state) {
+                          return DropdownMenuItem<String>(
+                            value: state,
+                            child: Text(state),
+                          );
+                        }).toList(),
                       ),
                     ],
                   ),

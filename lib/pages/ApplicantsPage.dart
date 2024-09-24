@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:job_verse/pages/ViewProfilePage.dart';
 
-import 'ViewProfilePage.dart';
-
 class ApplicantsPage extends StatelessWidget {
   final String vacancyId;
 
@@ -105,7 +103,7 @@ class ApplicantsPage extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => ProfilePage(uid: uid), // Pass the user ID to fetch complete profile
+                              builder: (context) => ProfilePage(uid: uid,vid:vacancyId), // Pass the user ID to fetch complete profile
                             ),
                           );
                         },

@@ -293,6 +293,3 @@ class _CreateProfileState extends State<CreateProfile> {
     );
   }
 }
-
-
-
