@@ -30,11 +30,11 @@ class _VacancyManagerState extends State<VacancyManager> {
         var data = doc.data() as Map<String, dynamic>;
 
         return Vacancy(
-          position: data['role'] ?? 'Unknown Role', // Handle potential null
-          company: data['companyName'] ?? 'Unknown Company', // Handle potential null
-          intake: data['numberOfIntakes'] ?? 0, // Default to 0
-          description: data['description'] ?? 'No description available', // Handle potential null
-          jobType: data['jobType'] ?? 'Unknown Job Type', // Handle potential null
+          position: data['role'] ?? 'Unknown Role',
+          company: data['companyName'] ?? 'Unknown Company',
+          intake: data['numberOfIntakes'] ?? 0,
+          description: data['description'] ?? 'No description available',
+          jobType: data['jobType'] ?? 'Unknown Job Type',
           vacancyId: doc.id,
         );
       }).toList();

@@ -5,103 +5,70 @@ class ProfilePage extends StatefulWidget {
   final String uid;
   final String vid;
 
-  ProfilePage({required this.uid,required this.vid});
+  ProfilePage({required this.uid, required this.vid});
 
   @override
   _ProfilePageState createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  String _name = 'No name provided';
-  String _profession = 'No profession provided';
-  String _dob = 'No date of birth provided';
-  String _about = 'No details provided';
-  String? _imageUrl;
-  String _currentApplicationState = 'Applied'; // Default state
-  String _resumeUrl = 'No details provided';
+  String _applicationState = 'No state provided';
+  String _company = 'No company provided';
+  String _role = 'No role provided';
+  String _applicationDate = 'No application date provided';
 
-  final List<String> _applicationStates = [
-    'Applied',
-    'Interview Scheduled',
-    'Offer Received',
-    'Rejected',
-  ]; // Possible states
+  Map<String, dynamic> _answers = {}; // Dynamic answers map
 
   @override
   void initState() {
     super.initState();
-    _loadProfileData();
-    _loadApplicationState(); // Load application state
+    _loadApplicationDetails();
   }
 
-  Future<void> _loadProfileData() async {
+  Future<void> _loadApplicationDetails() async {
     try {
-      DocumentSnapshot profileSnapshot = await FirebaseFirestore.instance
-          .collection("profiles")
-          .doc(widget.uid)
-          .get();
-
-      if (profileSnapshot.exists) {
-        Map<String, dynamic> data = profileSnapshot.data() as Map<String, dynamic>;
-        setState(() {
-          _name = data['name']?.toString() ?? 'No name provided';
-          _profession = data['profession']?.toString() ?? 'No profession provided';
-          _dob = data['dob']?.toString() ?? 'No date of birth provided';
-          _about = data['about']?.toString() ?? 'No details provided';
-          _imageUrl = data['image']?.toString()?? 'No details provided';
-          _resumeUrl = data['resume'] ?? 'No Resume provided';
-        });
-      }
-    } catch (e) {
-      print("Failed to load profile data: $e");
-    }
-  }
-
-  Future<void> _loadApplicationState() async {
-    try {
-      DocumentSnapshot applicationSnapshot = await FirebaseFirestore.instance
+      // Fetch application data based on userId and vacancyId
+      QuerySnapshot applicationSnapshot = await FirebaseFirestore.instance
           .collection('applications')
           .where('userId', isEqualTo: widget.uid)
-          .where('vacancyId',isEqualTo: widget.vid)
-          .limit(1)
-          .get()
-          .then((snapshot) => snapshot.docs.first);
+          .where('vacancyId', isEqualTo: widget.vid)
+          .get();
 
-      if (applicationSnapshot.exists) {
-        Map<String, dynamic> data = applicationSnapshot.data() as Map<String, dynamic>;
+      if (applicationSnapshot.docs.isNotEmpty) {
+        DocumentSnapshot applicationDoc = applicationSnapshot.docs.first;
+        Map<String, dynamic> data = applicationDoc.data() as Map<String, dynamic>;
+
         setState(() {
-          _currentApplicationState = data['CurrentState']?.toString() ?? 'Applied';
+          _answers = data['answers'] ?? {}; // Fetch the dynamic answers map
+          _applicationState = data['CurrentState']?.toString() ?? 'No state provided';
+          _company = data['company']?.toString() ?? 'No company provided';
+          _role = data['role']?.toString() ?? 'No role provided';
+          _applicationDate = data['applicationDate']?.toDate().toString() ?? 'No application date provided';
         });
       }
     } catch (e) {
-      print("Failed to load application state: $e");
+      print("Failed to load application details: $e");
     }
   }
 
   Future<void> _updateApplicationState(String newState) async {
     try {
-      QuerySnapshot applicationsSnapshot = await FirebaseFirestore.instance
+      // Update application state in Firestore
+      await FirebaseFirestore.instance
           .collection('applications')
           .where('userId', isEqualTo: widget.uid)
-          .where('vacancyId',isEqualTo: widget.vid)
-          .limit(1)
-          .get();
-
-      if (applicationsSnapshot.docs.isNotEmpty) {
-        DocumentSnapshot applicationDoc = applicationsSnapshot.docs.first;
-        await FirebaseFirestore.instance
-            .collection('applications')
-            .doc(applicationDoc.id)
-            .update({
-          'CurrentState': newState,
-        });
-        setState(() {
-          _currentApplicationState = newState;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Application state updated to $newState')),
-        );
-      }
+          .where('vacancyId', isEqualTo: widget.vid)
+          .get()
+          .then((applicationSnapshot) {
+        if (applicationSnapshot.docs.isNotEmpty) {
+          DocumentReference applicationRef = applicationSnapshot.docs.first.reference;
+          applicationRef.update({'CurrentState': newState});
+        }
+      });
+      setState(() {
+        _applicationState = newState; // Update local state
+      });
+      Navigator.pop(context); // Pop the current screen after updating
     } catch (e) {
       print("Failed to update application state: $e");
     }
@@ -111,86 +78,87 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Profile'),
+        title: Text('Response Details'),
+        backgroundColor: Colors.white, // White color for app bar
+        elevation: 0, // No shadow for a clean look
+        iconTheme: IconThemeData(color: Colors.black), // Black icons
       ),
-      body: _name.isEmpty
+      body: _answers.isEmpty
           ? Center(child: CircularProgressIndicator())
           : Padding(
         padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if (_imageUrl != null && _imageUrl!.isNotEmpty)
-                CircleAvatar(
-                  radius: 50,
-                  backgroundImage: NetworkImage(_imageUrl!),
+        child: ListView(
+          children: [
+            _buildAnswersSection(),
+            SizedBox(height: 16),
+            // Buttons to update application state
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: () => _updateApplicationState('Accepted'),
+                  child: Text('Accept'),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
                 ),
-              SizedBox(height: 16),
-              Text(
-                _name,
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 8),
-              Text(
-                _profession,
-                style: TextStyle(fontSize: 20, fontStyle: FontStyle.italic),
-              ),
-              SizedBox(height: 16),
-              Card(
-                elevation: 4,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Date of Birth:',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ElevatedButton(
+                  onPressed: () => _updateApplicationState('Rejected'),
+                  child: Text('Reject'),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnswersSection() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      color: Colors.white, // White background for the card
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ..._answers.entries.map((entry) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16.0),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.grey.shade100, // Light grey background for contrast
+                    ),
+                    child: ListTile(
+                      contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      title: Text(
+                        '${entry.key}:',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black, // Black text for titles
+                        ),
                       ),
-                      SizedBox(height: 4),
-                      Text(
-                        _dob,
-                        style: TextStyle(fontSize: 16),
+                      subtitle: Text(
+                        '${entry.value}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87, // Dark grey for answers
+                        ),
                       ),
-                      SizedBox(height: 16),
-                      Text(
-                        'About:',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        _about,
-                        style: TextStyle(fontSize: 16),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        'Application State:',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                      ),
-                      SizedBox(height: 4),
-                      DropdownButton<String>(
-                        value: _currentApplicationState,
-                        onChanged: (String? newState) {
-                          if (newState != null) {
-                            _updateApplicationState(newState);
-                          }
-                        },
-                        items: _applicationStates.map((String state) {
-                          return DropdownMenuItem<String>(
-                            value: state,
-                            child: Text(state),
-                          );
-                        }).toList(),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-            ],
-          ),
+                ],
+              );
+            }).toList(),
+          ],
         ),
       ),
     );
   }
 }
+

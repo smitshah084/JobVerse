@@ -19,6 +19,8 @@ class _AddVacancyPageState extends State<AddVacancyPage> {
   final TextEditingController descriptionController = TextEditingController();
   String? selectedJobType;
 
+  List<Map<String, String>> requiredFields = []; // List to hold candidate required fields
+
   Future<void> _addVacancy(String role, int numberOfIntakes, String description, String jobType) async {
     String? companyId = AuthService().currentUser?.uid;
 
@@ -29,7 +31,7 @@ class _AddVacancyPageState extends State<AddVacancyPage> {
       // Cast the data to Map<String, dynamic>
       String companyName = (companySnapshot.data() as Map<String, dynamic>)['name'] ?? 'Unknown Company';
 
-      // Add the vacancy with company name
+      // Add the vacancy with company name and required fields
       await FirebaseFirestore.instance.collection('vacancies').add({
         'role': role,
         'numberOfIntakes': numberOfIntakes,
@@ -38,12 +40,12 @@ class _AddVacancyPageState extends State<AddVacancyPage> {
         'companyId': companyId,
         'companyName': companyName, // Store company name
         'createdAt': FieldValue.serverTimestamp(),
+        'requiredFields': requiredFields, // Store dynamic candidate fields
       });
 
       widget.onVacancyAdded(); // Call the callback function to refresh the vacancy list
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -141,6 +143,11 @@ class _AddVacancyPageState extends State<AddVacancyPage> {
                   },
                 ),
                 SizedBox(height: 20),
+
+                // Section to dynamically add required candidate fields
+                DynamicCandidateFieldsForm(requiredFields: requiredFields),
+
+                SizedBox(height: 20),
                 ElevatedButton(
                   child: Text('Add Vacancy'),
                   style: ElevatedButton.styleFrom(
@@ -166,6 +173,61 @@ class _AddVacancyPageState extends State<AddVacancyPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+// Dynamic form for adding and removing required fields for candidates
+class DynamicCandidateFieldsForm extends StatefulWidget {
+  final List<Map<String, String>> requiredFields;
+
+  DynamicCandidateFieldsForm({required this.requiredFields});
+
+  @override
+  _DynamicCandidateFieldsFormState createState() => _DynamicCandidateFieldsFormState();
+}
+
+class _DynamicCandidateFieldsFormState extends State<DynamicCandidateFieldsForm> {
+  final TextEditingController fieldController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        TextFormField(
+          controller: fieldController,
+          decoration: InputDecoration(labelText: 'Required Candidate Field'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (fieldController.text.isNotEmpty) {
+              setState(() {
+                widget.requiredFields.add({'field': fieldController.text, 'type': 'String'});
+              });
+              fieldController.clear();
+            }
+          },
+          child: Text('Add Field'),
+        ),
+        // Display the added fields with the ability to remove
+        ListView.builder(
+          shrinkWrap: true,
+          itemCount: widget.requiredFields.length,
+          itemBuilder: (context, index) {
+            return ListTile(
+              title: Text(widget.requiredFields[index]['field']!),
+              trailing: IconButton(
+                icon: Icon(Icons.remove_circle_outline),
+                onPressed: () {
+                  setState(() {
+                    widget.requiredFields.removeAt(index); // Remove the field
+                  });
+                },
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 }

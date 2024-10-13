@@ -107,10 +107,10 @@ class ApplicantsPage extends StatelessWidget {
                             ),
                           );
                         },
-                          child: Text('View Profile'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue, // Change the color as needed
-                          ),
+                        child: Text('View Profile'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue, // Change the color as needed
+                        ),
                       ),
                     ],
                   ),

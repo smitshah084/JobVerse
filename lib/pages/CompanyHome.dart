@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:job_verse/services/auth.dart';
 import 'package:job_verse/pages/Profile.dart';
-import 'package:job_verse/pages/AddVacancyPage.dart';  // Make sure to import the new page
+import 'package:job_verse/pages/AddVacancyPage.dart';
 import 'package:job_verse/pages/UpdateVacancyPage.dart';
 import 'DeleteVacancy.dart';
 import 'ApplicantsPage.dart';
@@ -45,49 +45,18 @@ class _HomeState extends State<Home> {
     }
   }
 
-  // Fetch applicants for a specific vacancy
-  Future<List<Map<String, dynamic>>> _fetchApplicants(String vacancyId) async {
-    // Step 1: Fetch applications for the given vacancy
-    final applicantSnapshot = await _firestore
-        .collection('applications')
-        .where('vacancyId', isEqualTo: vacancyId)
-        .get();
-
-    List<Map<String, dynamic>> applicants = [];
-
-    // Step 2: Loop through each application and fetch user details
-    for (var doc in applicantSnapshot.docs) {
-      final applicationData = doc.data() as Map<String, dynamic>;
-      final userId = applicationData['userId'];
-
-      // Step 3: Fetch the profile information for the userId
-      final userProfileSnapshot = await _firestore.collection('profiles').doc(userId).get();
-      final userProfileData = userProfileSnapshot.data();
-
-      if (userProfileData != null) {
-        // Combine application data with user profile information
-        applicants.add({
-          'applicantName': userProfileData['name'] ?? 'Unknown',
-          'applicantEmail': userProfileData['email'] ?? 'No email provided',
-        });
-      }
-    }
-
-    return applicants;
-  }
-
   void _navigateToAddVacancyPage(BuildContext context) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AddVacancyPage(
-          onVacancyAdded: _fetchVacancies,  // Pass the callback to refresh vacancies after adding
+          onVacancyAdded: _fetchVacancies, // Pass the callback to refresh vacancies after adding
         ),
       ),
     );
   }
 
-  void _updateVacancy(BuildContext context, String documentId, String currentDescription, String currentJobType, int currentIntake) {
+  void _updateVacancy(BuildContext context, String documentId, String currentDescription, String currentJobType, int currentIntake, List<Map<String, String>> currentRequiredFields) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -96,18 +65,15 @@ class _HomeState extends State<Home> {
           currentDescription: currentDescription,
           currentJobType: currentJobType,
           currentIntake: currentIntake,
+          currentRequiredFields: currentRequiredFields,
         ),
       ),
     ).then((_) {
-      // This will be called when returning from UpdateVacancyPage
-      _fetchVacancies(); // Refresh the vacancies list
+      _fetchVacancies(); // Refresh the vacancies list after returning
     });
   }
 
-
   void _deleteVacancy(BuildContext context, String documentId) {
-    print("Attempting to delete vacancy with ID: $documentId"); // Debugging line
-
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -162,33 +128,40 @@ class _HomeState extends State<Home> {
         final description = vacancy['description'];
         final jobType = vacancy['jobType'];
 
+        // Assuming required fields as a List<Map<String, String>> for UpdateVacancyPage
+        final currentRequiredFields = (vacancy['requiredFields'] as List<dynamic>?)?.map((item) {
+          return Map<String, String>.from(item as Map);
+        }).toList() ?? []; // Default to an empty list if requiredFields is null
+
         return Card(
-          elevation: 5,
-          margin: EdgeInsets.all(10),
+          elevation: 8,
+          margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
           child: Padding(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Role: $role',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  role,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.blueAccent),
                 ),
-                SizedBox(height: 5),
-                Text('No of intakes: $intake'),
-                SizedBox(height: 5),
-                Text('Work: $jobType'),
-                SizedBox(height: 10),
+                SizedBox(height: 8),
+                Text('Number of Intakes: $intake', style: TextStyle(fontSize: 16)),
+                SizedBox(height: 8),
+                Text('Job Type: $jobType', style: TextStyle(fontSize: 16)),
+                SizedBox(height: 16),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     ElevatedButton(
-                      onPressed: () => _updateVacancy(context, documentId, description, jobType, intake),
+                      onPressed: () => _updateVacancy(context, documentId, description, jobType, intake, currentRequiredFields),
                       child: Text('Update'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange,
+                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                     ),
@@ -197,8 +170,9 @@ class _HomeState extends State<Home> {
                       child: Text('Delete'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
+                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                     ),
@@ -212,9 +186,12 @@ class _HomeState extends State<Home> {
                       child: Text('View Applicants'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
+                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
-
                   ],
                 ),
               ],
@@ -290,4 +267,3 @@ class _HomeState extends State<Home> {
     );
   }
 }
-
