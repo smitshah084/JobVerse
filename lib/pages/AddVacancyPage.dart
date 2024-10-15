@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:job_verse/services/auth.dart';
 
 class AddVacancyPage extends StatefulWidget {
-  final Function onVacancyAdded; // Callback to refresh the vacancies after adding
+  final Function onVacancyAdded;
 
   const AddVacancyPage({Key? key, required this.onVacancyAdded}) : super(key: key);
 
@@ -18,32 +18,75 @@ class _AddVacancyPageState extends State<AddVacancyPage> {
   final TextEditingController intakeController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   String? selectedJobType;
+  List<FormFieldData> dynamicFields = [];
 
-  List<Map<String, String>> requiredFields = []; // List to hold candidate required fields
+  final _labelController = TextEditingController();
+  String? _selectedFieldType;
+  bool _isRequired = false;
+  bool isLoading = false;
+
+  void _addField() {
+    if (_labelController.text.isEmpty || _selectedFieldType == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please enter field label and select field type.')));
+      return;
+    }
+
+    setState(() {
+      dynamicFields.add(
+        FormFieldData(
+          label: _labelController.text,
+          type: _selectedFieldType!,
+          isRequired: _isRequired,
+        ),
+      );
+      _labelController.clear();
+      _selectedFieldType = null;
+      _isRequired = false;
+    });
+  }
+
+  void _removeField(int index) {
+    setState(() {
+      dynamicFields.removeAt(index);
+    });
+  }
 
   Future<void> _addVacancy(String role, int numberOfIntakes, String description, String jobType) async {
+    setState(() {
+      isLoading = true;
+    });
+
     String? companyId = AuthService().currentUser?.uid;
 
     if (companyId != null) {
-      // Fetch the company name from the profiles collection
-      DocumentSnapshot companySnapshot = await FirebaseFirestore.instance.collection('profiles').doc(companyId).get();
+      try {
+        DocumentSnapshot companySnapshot = await FirebaseFirestore.instance.collection('profiles').doc(companyId).get();
+        String companyName = (companySnapshot.data() as Map<String, dynamic>)['name'] ?? 'Unknown Company';
 
-      // Cast the data to Map<String, dynamic>
-      String companyName = (companySnapshot.data() as Map<String, dynamic>)['name'] ?? 'Unknown Company';
+        await FirebaseFirestore.instance.collection('vacancies').add({
+          'role': role,
+          'numberOfIntakes': numberOfIntakes,
+          'description': description,
+          'jobType': jobType,
+          'companyId': companyId,
+          'companyName': companyName,
+          'formFields': dynamicFields.map((field) => {
+            'label': field.label,
+            'type': field.type,
+            'isRequired': field.isRequired,
+          }).toList(),
+          'createdAt': FieldValue.serverTimestamp(),
+        });
 
-      // Add the vacancy with company name and required fields
-      await FirebaseFirestore.instance.collection('vacancies').add({
-        'role': role,
-        'numberOfIntakes': numberOfIntakes,
-        'description': description,
-        'jobType': jobType,
-        'companyId': companyId,
-        'companyName': companyName, // Store company name
-        'createdAt': FieldValue.serverTimestamp(),
-        'requiredFields': requiredFields, // Store dynamic candidate fields
-      });
-
-      widget.onVacancyAdded(); // Call the callback function to refresh the vacancy list
+        widget.onVacancyAdded();
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Vacancy added successfully!')));
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to add vacancy: $e')));
+      } finally {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -51,23 +94,27 @@ class _AddVacancyPageState extends State<AddVacancyPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Add New Vacancy'),
+        title: Text('Post a New Job Opening'),
+        centerTitle: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
           child: Form(
-            key: _formKey, // Form key for validation
+            key: _formKey,
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Section: Job Information
+                Text('Job Information', style: Theme.of(context).textTheme.headlineSmall),
+                SizedBox(height: 10),
+
+                // Vacancy Name
                 TextFormField(
                   controller: roleController,
                   decoration: InputDecoration(
                     labelText: 'Vacancy Name',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -76,14 +123,14 @@ class _AddVacancyPageState extends State<AddVacancyPage> {
                     return null;
                   },
                 ),
-                SizedBox(height: 10),
+                SizedBox(height: 16),
+
+                // Number of Intakes
                 TextFormField(
                   controller: intakeController,
                   decoration: InputDecoration(
                     labelText: 'Number of Intakes',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -93,26 +140,26 @@ class _AddVacancyPageState extends State<AddVacancyPage> {
                     }
                     int? numberOfIntakes = int.tryParse(value);
                     if (numberOfIntakes == null || numberOfIntakes <= 0) {
-                      return 'Number of Intakes must be a positive integer';
+                      return 'Intakes must be a positive integer';
                     }
                     return null;
                   },
                 ),
-                SizedBox(height: 10),
+                SizedBox(height: 16),
+
+                // Job Type Dropdown
                 DropdownButtonFormField<String>(
                   value: selectedJobType,
                   decoration: InputDecoration(
                     labelText: 'Job Type',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  items: ['Remote', 'Office']
-                      .map((type) => DropdownMenuItem(
-                    value: type,
-                    child: Text(type),
-                  ))
-                      .toList(),
+                  items: ['Remote', 'Office'].map((type) {
+                    return DropdownMenuItem(
+                      value: type,
+                      child: Text(type),
+                    );
+                  }).toList(),
                   onChanged: (value) {
                     setState(() {
                       selectedJobType = value;
@@ -125,14 +172,14 @@ class _AddVacancyPageState extends State<AddVacancyPage> {
                     return null;
                   },
                 ),
-                SizedBox(height: 10),
+                SizedBox(height: 16),
+
+                // Description
                 TextFormField(
                   controller: descriptionController,
                   decoration: InputDecoration(
                     labelText: 'Description',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                   maxLines: 5,
                   validator: (value) {
@@ -142,31 +189,98 @@ class _AddVacancyPageState extends State<AddVacancyPage> {
                     return null;
                   },
                 ),
-                SizedBox(height: 20),
+                SizedBox(height: 30),
 
-                // Section to dynamically add required candidate fields
-                DynamicCandidateFieldsForm(requiredFields: requiredFields),
+                // Section: Application Fields
+                Text('Application Fields', style: Theme.of(context).textTheme.headlineSmall),
+                SizedBox(height: 10),
 
-                SizedBox(height: 20),
-                ElevatedButton(
-                  child: Text('Add Vacancy'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                // Dynamic Fields: Label
+                TextField(
+                  controller: _labelController,
+                  decoration: InputDecoration(
+                    labelText: "Field Label",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      _addVacancy(
-                        roleController.text.trim(),
-                        int.parse(intakeController.text.trim()),
-                        descriptionController.text.trim(),
-                        selectedJobType!,
-                      );
-                      Navigator.pop(context);
-                    }
+                ),
+                SizedBox(height: 10),
+
+                // Field Type Dropdown
+                DropdownButton<String>(
+                  value: _selectedFieldType,
+                  hint: Text("Select Field Type"),
+                  items: ["text", "number", "email", "pdf"].map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedFieldType = value;
+                    });
                   },
+                ),
+                SizedBox(height: 10),
+
+                // Required Checkbox
+                CheckboxListTile(
+                  title: Text("Is Required"),
+                  value: _isRequired,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      _isRequired = value ?? false;
+                    });
+                  },
+                ),
+                SizedBox(height: 10),
+
+                // Add Field Button
+                ElevatedButton.icon(
+                  onPressed: _addField,
+                  icon: Icon(Icons.add),
+                  label: Text("Add Field"),
+                ),
+                SizedBox(height: 20),
+
+                // List of Dynamic Fields
+                if (dynamicFields.isNotEmpty) ...[
+                  ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: dynamicFields.length,
+                    itemBuilder: (context, index) {
+                      final field = dynamicFields[index];
+                      return ListTile(
+                        title: Text("${field.label} (${field.type})"),
+                        subtitle: Text(field.isRequired ? "Required" : "Optional"),
+                        trailing: IconButton(
+                          icon: Icon(Icons.delete),
+                          onPressed: () => _removeField(index),
+                        ),
+                      );
+                    },
+                  ),
+                  SizedBox(height: 20),
+                ],
+
+                // Loading Spinner or Add Vacancy Button
+                isLoading
+                    ? Center(child: CircularProgressIndicator())
+                    : SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        _addVacancy(
+                          roleController.text,
+                          int.parse(intakeController.text),
+                          descriptionController.text,
+                          selectedJobType!,
+                        );
+                      }
+                    },
+                    child: Text('Add Vacancy'),
+                  ),
                 ),
               ],
             ),
@@ -177,57 +291,14 @@ class _AddVacancyPageState extends State<AddVacancyPage> {
   }
 }
 
-// Dynamic form for adding and removing required fields for candidates
-class DynamicCandidateFieldsForm extends StatefulWidget {
-  final List<Map<String, String>> requiredFields;
+class FormFieldData {
+  final String label;
+  final String type;
+  final bool isRequired;
 
-  DynamicCandidateFieldsForm({required this.requiredFields});
-
-  @override
-  _DynamicCandidateFieldsFormState createState() => _DynamicCandidateFieldsFormState();
-}
-
-class _DynamicCandidateFieldsFormState extends State<DynamicCandidateFieldsForm> {
-  final TextEditingController fieldController = TextEditingController();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        TextFormField(
-          controller: fieldController,
-          decoration: InputDecoration(labelText: 'Required Candidate Field'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            if (fieldController.text.isNotEmpty) {
-              setState(() {
-                widget.requiredFields.add({'field': fieldController.text, 'type': 'String'});
-              });
-              fieldController.clear();
-            }
-          },
-          child: Text('Add Field'),
-        ),
-        // Display the added fields with the ability to remove
-        ListView.builder(
-          shrinkWrap: true,
-          itemCount: widget.requiredFields.length,
-          itemBuilder: (context, index) {
-            return ListTile(
-              title: Text(widget.requiredFields[index]['field']!),
-              trailing: IconButton(
-                icon: Icon(Icons.remove_circle_outline),
-                onPressed: () {
-                  setState(() {
-                    widget.requiredFields.removeAt(index); // Remove the field
-                  });
-                },
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
+  FormFieldData({
+    required this.label,
+    required this.type,
+    this.isRequired = false,
+  });
 }

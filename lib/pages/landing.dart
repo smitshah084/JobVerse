@@ -29,6 +29,18 @@ class _VacancyManagerState extends State<VacancyManager> {
       vacancies = snapshot.docs.map((doc) {
         var data = doc.data() as Map<String, dynamic>;
 
+        // Extract form fields if they exist
+        List<FormFieldData> formFields = [];
+        if (data.containsKey('formFields')) {
+          formFields = (data['formFields'] as List).map((field) {
+            return FormFieldData(
+              label: field['label'] ?? 'Unknown Field',
+              type: field['type'] ?? 'text',
+              isRequired: field['isRequired'] ?? false,
+            );
+          }).toList();
+        }
+
         return Vacancy(
           position: data['role'] ?? 'Unknown Role',
           company: data['companyName'] ?? 'Unknown Company',
@@ -36,10 +48,12 @@ class _VacancyManagerState extends State<VacancyManager> {
           description: data['description'] ?? 'No description available',
           jobType: data['jobType'] ?? 'Unknown Job Type',
           vacancyId: doc.id,
+          formFields: formFields,
         );
       }).toList();
     });
   }
+
 
 
 

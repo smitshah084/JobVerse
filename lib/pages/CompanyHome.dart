@@ -61,11 +61,7 @@ class _HomeState extends State<Home> {
       context,
       MaterialPageRoute(
         builder: (context) => UpdateVacancyPage(
-          documentId: documentId,
-          currentDescription: currentDescription,
-          currentJobType: currentJobType,
-          currentIntake: currentIntake,
-          currentRequiredFields: currentRequiredFields,
+          vacancyId: documentId,
         ),
       ),
     ).then((_) {
