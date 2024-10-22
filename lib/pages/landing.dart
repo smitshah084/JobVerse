@@ -5,6 +5,7 @@ import 'package:job_verse/pages/VacancyCard.dart';
 import 'package:job_verse/pages/VacancyDetailsPage.dart';
 import 'package:job_verse/services/auth.dart';
 import 'package:job_verse/pages/Profile.dart';
+import 'package:job_verse/pages/status.dart';
 
 class VacancyManager extends StatefulWidget {
   const VacancyManager({super.key});
@@ -23,10 +24,25 @@ class _VacancyManagerState extends State<VacancyManager> {
   }
 
   Future<void> _fetchVacancies() async {
-    QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('vacancies').get();
+    String userId = AuthService().currentUser?.uid ?? '';
 
+    // Fetch all vacancies
+    QuerySnapshot vacancySnapshot = await FirebaseFirestore.instance.collection('vacancies').get();
+
+    // Fetch the user's applications to find vacancies they have applied for
+    QuerySnapshot applicationSnapshot = await FirebaseFirestore.instance
+        .collection('applications')
+        .where('userId', isEqualTo: userId)
+        .get();
+
+    // Collect the vacancy IDs the user has already applied for
+    List<String> appliedVacancyIds = applicationSnapshot.docs.map((doc) {
+      return doc['vacancyId'] as String;
+    }).toList();
+
+    // Filter vacancies where the user has not applied
     setState(() {
-      vacancies = snapshot.docs.map((doc) {
+      vacancies = vacancySnapshot.docs.map((doc) {
         var data = doc.data() as Map<String, dynamic>;
 
         // Extract form fields if they exist
@@ -50,9 +66,13 @@ class _VacancyManagerState extends State<VacancyManager> {
           vacancyId: doc.id,
           formFields: formFields,
         );
+      }).where((vacancy) {
+        // Filter out vacancies where the user has already applied
+        return !appliedVacancyIds.contains(vacancy.vacancyId);
       }).toList();
     });
   }
+
 
 
 
@@ -98,9 +118,13 @@ class _VacancyManagerState extends State<VacancyManager> {
             leading: Icon(Icons.info),
             title: Text('Status'),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Status Page Coming Soon!')));
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => StatusPage(userId: AuthService().currentUser?.uid ?? '')),
+              );
             },
           ),
+
           ListTile(
             leading: Icon(Icons.logout),
             title: Text('Sign Out'),
