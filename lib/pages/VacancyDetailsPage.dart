@@ -71,7 +71,7 @@ class _VacancyDetailsPageState extends State<VacancyDetailsPage> {
             vacancyId: widget.vacancy.vacancyId,   // Pass the required vacancyId
             role: widget.vacancy.position,         // Pass the required role
             company: widget.vacancy.company,       // Pass the required company name
-            formFields: widget.vacancy.formFields, // Pass the formFields list
+            formFields: widget.vacancy.formFields,
           ),
         ),
       );
